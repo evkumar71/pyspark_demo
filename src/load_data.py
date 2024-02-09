@@ -64,12 +64,12 @@ if __name__ == '__main__':
     cls = Readfile()
     df = cls.load_file('ZYNE')
     df.printSchema()
-    # df.show(5, False)
     # df.sort(df['date'].asc()).show(5)
     df.sort(df['date'].desc() , df['open'].asc()).show(5)
 
-    # df.groupby(year(df['date']).alias('year')).max('close').sort('year').show(5)
-    df.groupby(year(df['date']).alias('Year')) \
-        .agg(min('close'), max('close')) \
-        .sort('Year').show(5)
+    df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
+        .agg(max('close').alias('maxClose'), avg('close').alias('avgClose'), sum('open').alias('sumOpen')) \
+        .sort(col('maxClose').desc()) \
+        .show()
+
     spark.stop()
