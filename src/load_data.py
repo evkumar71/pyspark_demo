@@ -55,7 +55,7 @@ class Readfile():
                 f"concat(cast(date_10 as string), 'hello world' ) as new_col"\
                 ' from stock_info'
 
-        # spark.sql('select * from stock_info').show(3, truncate=False)
+        spark.sql('select * from stock_info').show(3, truncate=False)
         spark.sql(query).show(3, truncate=False)
         return df3
 
@@ -64,5 +64,12 @@ if __name__ == '__main__':
     cls = Readfile()
     df = cls.load_file('ZYNE')
     df.printSchema()
-    df.show(5, False)
+    # df.show(5, False)
+    # df.sort(df['date'].asc()).show(5)
+    df.sort(df['date'].desc() , df['open'].asc()).show(5)
+
+    # df.groupby(year(df['date']).alias('year')).max('close').sort('year').show(5)
+    df.groupby(year(df['date']).alias('Year')) \
+        .agg(min('close'), max('close')) \
+        .sort('Year').show(5)
     spark.stop()
