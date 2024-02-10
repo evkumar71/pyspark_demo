@@ -59,12 +59,22 @@ class Readfile():
         spark.sql('select * from stock_info').show(3, truncate=False)
         spark.sql(query).show(3, truncate=False)
 
-        win = Window.partitionBy(year(df3['date']), month(df3['date'])) \
-                    .orderBy(df3['close'].desc(), df3['date'])
+        # define window fn-ex1
+        # win = Window.partitionBy(year(df3['date']), month(df3['date'])) \
+        #             .orderBy(df3['close'].desc(), df3['date'])
+        #
+        # # apply window-fn on the win
+        # df3.withColumn('rank', row_number().over(win))\
+        #     .filter(col('rank') == 1) \
+        #     .show(10)
 
-        df3.withColumn('rank', row_number().over(win))\
-            .filter(col('rank') == 1) \
-            .show(10)
+        # window fn-ex2 - partition entire dataset
+        win = Window.partitionBy().orderBy(df3['date'])
+
+        df3.withColumn('prevDayClose', lag(df3['close'], 1, 0.0).over((win))) \
+            .withColumn('diffPrevClose', df3['open'] - col('prevDayClose')) \
+            .withColumn('diffPrevCloseNew', when(col('prevDayClose') == 0.0, 0).otherwise(df3['open'] - col('prevDayClose'))) \
+            .show()
 
         return df3
 
@@ -73,12 +83,12 @@ if __name__ == '__main__':
     cls = Readfile()
     df = cls.load_file('ZYNE')
     df.printSchema()
-    df.sort(df['date'].asc()).show(5)
-    df.sort(df['date'].desc() , df['open'].asc()).show(5)
-
-    df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
-        .agg(max('close').alias('maxClose'), avg('close').alias('avgClose'), sum('open').alias('sumOpen')) \
-        .sort(col('maxClose').desc()) \
-        .show()
+    # df.sort(df['date'].asc()).show(5)
+    # df.sort(df['date'].desc() , df['open'].asc()).show(5)
+    #
+    # df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
+    #     .agg(max('close').alias('maxClose'), avg('close').alias('avgClose'), sum('open').alias('sumOpen')) \
+    #     .sort(col('maxClose').desc()) \
+    #     .show()
 
     spark.stop()
