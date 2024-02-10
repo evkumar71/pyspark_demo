@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
+from pyspark.sql import Window
 
 file_schema = StructType([
     StructField('Date', DateType()),
@@ -57,6 +58,14 @@ class Readfile():
 
         spark.sql('select * from stock_info').show(3, truncate=False)
         spark.sql(query).show(3, truncate=False)
+
+        win = Window.partitionBy(year(df3['date']), month(df3['date'])) \
+                    .orderBy(df3['close'].desc(), df3['date'])
+
+        df3.withColumn('rank', row_number().over(win))\
+            .filter(col('rank') == 1) \
+            .show(10)
+
         return df3
 
 
@@ -64,7 +73,7 @@ if __name__ == '__main__':
     cls = Readfile()
     df = cls.load_file('ZYNE')
     df.printSchema()
-    # df.sort(df['date'].asc()).show(5)
+    df.sort(df['date'].asc()).show(5)
     df.sort(df['date'].desc() , df['open'].asc()).show(5)
 
     df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
