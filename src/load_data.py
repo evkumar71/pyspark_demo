@@ -81,7 +81,7 @@ class Readfile():
 
         return df3
 
-    def df_test(self):
+    def df_test_null(self):
         schema = StructType() \
             .add('date', DateType(), True) \
             .add('open', DoubleType(), True) \
@@ -102,9 +102,48 @@ class Readfile():
                       .otherwise((df['date']))).show()
 
 
+    def create_df(self):
+        schema = StructType() \
+            .add('id', IntegerType(), False) \
+            .add('open', DoubleType(), True) \
+            .add('close', DoubleType(), True)
+
+        df1 = spark.createDataFrame([
+            Row(id=1, open=1.0, close=2.0),
+            Row(id=2, open=2.0, close=3.0),
+            Row(id=3, open=3.0, close=3.5)
+        ], schema)
+
+        df2 = spark.createDataFrame([
+            Row(id=1, open=1.1, close=2.1),
+            Row(id=2, open=2.1, close=3.1),
+            Row(id=4, open=4.1, close=4.5)
+        ], schema)
+
+        return df1, df2
+
+    def df_join(self):
+        df1, df2 = self.create_df()
+
+        cond = (df1['id'] + 0) == df2['id']
+        # df1.join(df2, ['id', 'open'], 'inner').show()
+        # df1.join(df2, df1['id'] == df2['id'], 'left').show()
+        # df1.join(df2, df1['id'] == df2['id'], 'right').show()
+        # df1.join(df2, ['id'], 'left').show()
+        # df1.join(df2, ['id'], 'right').show()
+        df1.join(df2, ['id'], 'semi').show()
+        df1.join(df2, ['id'], 'anti').show()
+
+
+    def df_union(self):
+        df1, df2 = self.create_df()
+        df1.select('open', 'close', 'id').union(df2).show()
+        df1.select('open', 'close', 'id').unionByName(df2).show()
+
+
 if __name__ == '__main__':
     cls = Readfile()
-    cls.df_test()
+    cls.df_union()
 
     df = cls.load_file('ZYNE')
     df.printSchema()
