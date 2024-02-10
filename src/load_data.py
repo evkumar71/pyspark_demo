@@ -60,13 +60,13 @@ class Readfile():
         spark.sql(query).show(3, truncate=False)
 
         # define window fn-ex1
-        # win = Window.partitionBy(year(df3['date']), month(df3['date'])) \
-        #             .orderBy(df3['close'].desc(), df3['date'])
-        #
-        # # apply window-fn on the win
-        # df3.withColumn('rank', row_number().over(win))\
-        #     .filter(col('rank') == 1) \
-        #     .show(10)
+        win = Window.partitionBy(year(df3['date']), month(df3['date'])) \
+                    .orderBy(df3['close'].desc(), df3['date'])
+
+        # apply window-fn on the win
+        df3.withColumn('rank', row_number().over(win))\
+            .filter(col('rank') == 1) \
+            .show(10)
 
         # window fn-ex2 - partition entire dataset
         win = Window.partitionBy().orderBy(df3['date'])
@@ -83,12 +83,12 @@ if __name__ == '__main__':
     cls = Readfile()
     df = cls.load_file('ZYNE')
     df.printSchema()
-    # df.sort(df['date'].asc()).show(5)
-    # df.sort(df['date'].desc() , df['open'].asc()).show(5)
-    #
-    # df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
-    #     .agg(max('close').alias('maxClose'), avg('close').alias('avgClose'), sum('open').alias('sumOpen')) \
-    #     .sort(col('maxClose').desc()) \
-    #     .show()
+    df.sort(df['date'].asc()).show(5)
+    df.sort(df['date'].desc() , df['open'].asc()).show(5)
+
+    df.groupby(year(df['date']).alias('Year'), month(df['date']).alias('Month')) \
+        .agg(max('close').alias('maxClose'), avg('close').alias('avgClose'), sum('open').alias('sumOpen')) \
+        .sort(col('maxClose').desc()) \
+        .show()
 
     spark.stop()
