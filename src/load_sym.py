@@ -30,24 +30,43 @@ sym_sch = StructType([
 symbols = ['ZUO', 'ZVO', 'ZYME', 'ZYNE', 'ZYXI']
 
 
-def datastore():
-    global spark
-
-    spark = SparkSession \
+def get_session():
+    ses = SparkSession \
         .builder \
         .appName("spark etl") \
         .master("local[*]") \
         .getOrCreate()
 
+    return ses
+
+
+def write_parquet(p_df: DataFrame):
+    pq_path = "derived/symbols.parquet"
+    # DataFrameWriter
+    df_writer = DataFrameWriter(p_df)
+    df_writer.parquet(path=pq_path, mode="overwrite")
+
+
+def datastore():
     # DataFrameReader
     csv_path = "datafiles/symbols_valid_meta.csv"
     df = spark.read.csv(csv_path, schema=meta_sch, header=True)
-    df.show(10)
 
-    # DataFrameWriter
-    pq_path = "derived/symbols.parquet"
-    df_writer = DataFrameWriter(df)
-    df_writer.parquet(path=pq_path, mode="overwrite")
+    df2 = df.select(df['Nasdaq Traded'].alias('nasdaqTraded'),
+                    df['Symbol'].alias('symbol'),
+                    df['Security Name'].alias('securityName'),
+                    df['Listing Exchange'].alias('listingExchange'),
+                    df['Market Category'].alias('marketCategory'),
+                    df['ETF'].alias('etf'),
+                    df['Round Lot Size'].alias('roundLotSize'),
+                    df['Test Issue'].alias('testIssue'),
+                    df['Financial Status'].alias('financialStatus'),
+                    df['CQS Symbol'].alias('cqsSymbol'),
+                    df['NASDAQ Symbol'].alias('nasdaqSymbol'),
+                    df['NextShares'].alias('nextShares')
+                    )
+
+    write_parquet(df2)
 
     for sym in symbols:
         find_max(sym)
@@ -55,7 +74,7 @@ def datastore():
     for sym in symbols:
         find_sma(sym)
 
-    spark.stop()
+    return df2
 
 
 def find_max(sym: str):
@@ -81,4 +100,7 @@ def find_sma(sym: str):
 
 
 if __name__ == '__main__':
-    datastore()
+    spark = get_session()
+    df = datastore()
+    df.show(10)
+    spark.stop()
