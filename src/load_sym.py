@@ -1,6 +1,6 @@
-from pyspark.sql import SparkSession, DataFrameWriter, DataFrame
+from pyspark.sql import SparkSession, DataFrameWriter, Window
 from pyspark.sql.types import *
-from pyspark.sql.functions import min, max
+from pyspark.sql.functions import *
 
 meta_sch = StructType([
     StructField("Nasdaq Traded", StringType()),
@@ -57,7 +57,13 @@ def find_max(sym: str):
     csv_path = f"datafiles/{sym}.csv"
 
     df = spark.read.csv(csv_path, schema=sym_sch, header=True)
-    df.select(min(df['Close']).alias(f"{sym} Min Close"), max(df['Close']).alias(f"{sym} Max Close")).show()
+    df2 = df.withColumn('sym', lit(sym))
+    df2.groupby(df2['sym'], year(df2['Date']).alias('year')) \
+        .agg(min('Close').alias('minClose'), max('Close').alias('maxClose')) \
+        .orderBy(col('year')) \
+        .show(5)
+
+    # df.select(min(df['Close']).alias(f"{sym} Min Close"), max(df['Close']).alias(f"{sym} Max Close")).show()
 
 if __name__ == '__main__':
     datastore()
